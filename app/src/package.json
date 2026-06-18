@@ -4,7 +4,7 @@
   "description": "Healthcare EHR Application Backend",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2"
