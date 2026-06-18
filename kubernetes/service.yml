@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ehr-app-service
+  namespace: healthcare
+spec:
+  type: NodePort
+  selector:
+    app: ehr-app
+  ports:
+    - protocol: TCP
+      port: 80         # Internal cluster port
+      targetPort: 3000 # App container port
+      nodePort: 30000  # External web traffic entry port

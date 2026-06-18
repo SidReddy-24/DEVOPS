@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ehr-app-deployment
+  namespace: healthcare
+spec:
+  replicas: 2 # Maintains high availability by running two instances of your app
+  selector:
+    matchLabels:
+      app: ehr-app
+  template:
+    metadata:
+      labels:
+        app: ehr-app
+    spec:
+      containers:
+      - name: ehr-container
+        image: ehr-app:latest # Jenkins will update this tag automatically later
+        ports:
+        - containerPort: 3000
+        
+        # Free-tier optimization: Keep memory footprint small
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "256Mi"
+          requests:
+            cpu: "250m"
+            memory: "128Mi"
+        
+        # Health Checks (Ensures zero-downtime deployments)
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
