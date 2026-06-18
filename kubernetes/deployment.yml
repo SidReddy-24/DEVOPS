@@ -23,9 +23,15 @@ spec:
         - name: DB_HOST
           value: "mysql"
         - name: DB_USER
-          value: "root"
+          valueFrom:
+            secretKeyRef:
+              name: ehr-db-credentials
+              key: db-user
         - name: DB_PASSWORD
-          value: "rootpassword"
+          valueFrom:
+            secretKeyRef:
+              name: ehr-db-credentials
+              key: db-password
         - name: DB_NAME
           value: "healthcare"
         

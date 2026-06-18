@@ -51,6 +51,7 @@ pipeline {
                 sh "sed -i 's|image: sidreddy24/ehr-app:.*|image: sidreddy24/ehr-app:latest|g' kubernetes/deployment.yml"
                 // Apply manifests
                 sh "kubectl apply -f kubernetes/namespace.yml --insecure-skip-tls-verify"
+                sh "kubectl apply -f kubernetes/secret.yml --insecure-skip-tls-verify"
                 sh "kubectl apply -f kubernetes/deployment.yml --insecure-skip-tls-verify"
                 sh "kubectl apply -f kubernetes/service.yml --insecure-skip-tls-verify"
                 // Force K3s to reload the newly imported image
