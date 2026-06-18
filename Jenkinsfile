@@ -45,16 +45,10 @@ pipeline {
         stage('5. Deploy to Kubernetes') {
             steps {
                 echo 'Applying Kubernetes Manifests to local K3s Cluster...'
-                
-                // Ensures the target healthcare namespace exists first
-                sh "kubectl apply -f kubernetes/namespace.yml"
-                
-                // Dynamically updates the deployment manifest to point to our newly compiled image
-                sh "sed -i 's|ehr-app:latest|${DOCKER_REGISTRY_USER}/${APP_NAME}:${IMAGE_TAG}|g' kubernetes/deployment.yml"
-                
-                // Deploys app and updates the network mapping routing rules
-                sh "kubectl apply -f kubernetes/deployment.yml"
-                sh "kubectl apply -f kubernetes/service.yml"
+                // The --insecure-skip-tls-verify flag tells kubectl to ignore the certificate's IP mismatch restriction
+                sh "kubectl apply -f kubernetes/namespace.yml --insecure-skip-tls-verify"
+                sh "kubectl apply -f kubernetes/deployment.yml --insecure-skip-tls-verify"
+                sh "kubectl apply -f kubernetes/service.yml --insecure-skip-tls-verify"
             }
         }
     }
