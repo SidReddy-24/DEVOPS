@@ -44,23 +44,28 @@ pipeline {
 
         stage('5. Deploy to Kubernetes') {
             steps {
-                echo 'Applying Kubernetes Manifests to local K3s Cluster...'
-                // Inject the newly built image tag dynamically into the deployment manifest
-                sh "sed -i 's|image: sidreddy24/ehr-app:latest|image: sidreddy24/ehr-app:\${IMAGE_TAG}|g' kubernetes/deployment.yml"
-                // The --insecure-skip-tls-verify flag tells kubectl to ignore the certificate's IP mismatch restriction
+                echo 'Applying Kubernetes Manifests to K3s Cluster...'
+                // Import the freshly built image directly into K3s containerd (no registry push needed)
+                sh "docker save ${DOCKER_REGISTRY_USER}/${APP_NAME}:latest | sudo k3s ctr images import -"
+                // Ensure the deployment manifest always references :latest
+                sh "sed -i 's|image: sidreddy24/ehr-app:.*|image: sidreddy24/ehr-app:latest|g' kubernetes/deployment.yml"
+                // Apply manifests
                 sh "kubectl apply -f kubernetes/namespace.yml --insecure-skip-tls-verify"
                 sh "kubectl apply -f kubernetes/deployment.yml --insecure-skip-tls-verify"
                 sh "kubectl apply -f kubernetes/service.yml --insecure-skip-tls-verify"
+                // Force K3s to reload the newly imported image
+                sh "kubectl rollout restart deployment/ehr-app-deployment -n healthcare --insecure-skip-tls-verify"
+                sh "kubectl rollout status deployment/ehr-app-deployment -n healthcare --insecure-skip-tls-verify --timeout=90s"
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline executed perfectly. Application is running on http://YOUR_EC2_PUBLIC_IP:30000"
+            echo "✅ Pipeline executed perfectly. Application is running on http://15.206.210.225:30000"
         }
         failure {
-            echo "Pipeline failed. Check build logs for debugging."
+            echo "❌ Pipeline failed. Check build logs for debugging."
         }
     }
 }
