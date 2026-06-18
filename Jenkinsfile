@@ -27,10 +27,9 @@ pipeline {
         stage('3. Build Optimized Image') {
             steps {
                 echo 'Building production multi-stage Docker image...'
-                dir('app') {
-                    sh "docker build -t ${DOCKER_REGISTRY_USER}/${APP_NAME}:${IMAGE_TAG} ."
-                    sh "docker tag ${DOCKER_REGISTRY_USER}/${APP_NAME}:${IMAGE_TAG} ${DOCKER_REGISTRY_USER}/${APP_NAME}:latest"
-                }
+                // If your Dockerfile is in the root directory, we run the build directly:
+                sh "docker build -t ${DOCKER_REGISTRY_USER}/${APP_NAME}:${IMAGE_TAG} ."
+                sh "docker tag ${DOCKER_REGISTRY_USER}/${APP_NAME}:${IMAGE_TAG} ${DOCKER_REGISTRY_USER}/${APP_NAME}:latest"
             }
         }
 
