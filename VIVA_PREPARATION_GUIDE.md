@@ -45,7 +45,33 @@ graph TD
 
 ---
 
-## 2. A-Z DevOps & Infrastructure Topics Covered
+## 2. AWS Free-Tier Architectural Trade-Offs & Decisions
+
+In production, hosting a platform on enterprise-grade AWS services incurs significant costs (minimum **$100+/month**). To adhere to **AWS Free-Tier limits (1x t2.micro, 1GB RAM, 30GB Disk)**, we strategically mapped heavy, paid enterprise AWS services to lightweight, open-source alternatives that behave identically:
+
+### 1. Enterprise Service: AWS EKS (Elastic Kubernetes Service)
+*   **Cost Barrier:** EKS charges $0.10/hour ($73/month) for the control plane alone, plus EC2 worker nodes (not covered in standard free-tier limits).
+*   **DevOps Alternative:** Deployed **K3s (Lightweight Kubernetes)** on a single free-tier EC2 instance. K3s is fully CNCF certified, utilizes less than 500MB of RAM, and runs all standard Kubernetes manifests (Deployments, Services, Secrets, Namespaces) exactly like EKS.
+
+### 2. Enterprise Service: AWS RDS (Relational Database Service)
+*   **Cost Barrier:** Free-tier RDS is time-limited, and multi-AZ deployments for High Availability quickly exceed budget limits.
+*   **DevOps Alternative:** Deployed a containerized **MySQL Database Pod** directly inside the Kubernetes cluster. It uses standard internal cluster DNS routing (`mysql`) mimicking how a private RDS endpoint functions in a VPC subnet.
+
+### 3. Enterprise Service: AWS Secrets Manager
+*   **Cost Barrier:** Charges $0.40 per secret per month, plus API request fees.
+*   **DevOps Alternative:** Deployed **Kubernetes Secrets** and local **HashiCorp Vault** (port 8200) to manage credentials. The credentials are encrypted at rest inside the cluster and injected into the container via environmental variable key references (`secretKeyRef`).
+
+### 4. Enterprise Service: AWS CloudWatch (Monitoring & Alerts)
+*   **Cost Barrier:** Custom metrics ingestion, alarms, and dashboards quickly accumulate charges.
+*   **DevOps Alternative:** Deployed **Prometheus** (open-source metrics aggregator) and **Grafana** (visualizer) directly on our cluster, enabling full operational visibility for $0.
+
+### 5. Enterprise Service: AWS S3 (Simple Storage Service) for Backups
+*   **Cost Barrier:** Small costs, but requires IAM credentials configuration in script files.
+*   **DevOps Alternative:** Configured a local timestamped backup system under `scripts/backup.sh` which exports database snapshots using `mysqldump` to a `/backups` directory on the EC2 root block volume, ready to be synced to S3 using simple `aws s3 sync` commands.
+
+---
+
+## 3. A-Z DevOps & Infrastructure Topics Covered
 
 *   **A - AWS EC2 Provisioning:** The virtual infrastructure is hosted on an AWS EC2 instance running Ubuntu 22.04 LTS (t2.micro / Free-Tier) in the `ap-south-1` region.
 *   **B - Build Automation & Pipelines:** Automated builds are handled via a declarative `Jenkinsfile` executing stages: checkout, lint, build, local scan, and deploy.
@@ -76,7 +102,7 @@ graph TD
 
 ---
 
-## 3. Key Configuration Files Explained
+## 4. Key Configuration Files Explained
 
 ### A. Infrastructure: Terraform (`terraform/main.tf`)
 This file provisions the AWS EC2 instance, configures the root storage size to 30 GB (AWS Free Tier limit), and bootstrap installs Docker, K3s, and Jenkins.
@@ -130,7 +156,7 @@ Divided into five stages:
 
 ---
 
-## 4. Monitoring & Disaster Recovery Implementations
+## 5. Monitoring & Disaster Recovery Implementations
 
 ### A. Monitoring Configurations (`monitoring/`)
 *   **Prometheus Config (`prometheus-config.yml`):** Targets the Kubernetes cluster local route `ehr-app-service.healthcare.svc.cluster.local:80` on the `/metrics` path.
@@ -142,7 +168,7 @@ Divided into five stages:
 
 ---
 
-## 5. Key Commands Cheat Sheet
+## 6. Key Commands Cheat Sheet
 
 ### Running Backup and Restore (DR Test)
 *   `./scripts/backup.sh` - Performs database backup.
@@ -169,7 +195,7 @@ Divided into five stages:
 
 ---
 
-## 6. Top Viva Questions & Expert Answers
+## 7. Top Viva Questions & Expert Answers
 
 ### Q1: What is the difference between Docker and Kubernetes?
 **Answer:** Docker is a platform containerization technology used to package and run an application inside an isolated environment (container) with all its dependencies. Kubernetes is a container orchestration platform that manages clusters of containers across multiple hosts, handles scaling, auto-healing, load balancing, and rolling updates.
@@ -211,3 +237,6 @@ These can be automated as daily cron jobs.
 
 ### Q11: What is the purpose of the GitHub Actions CI workflow?
 **Answer:** The workflow in `.github/workflows/ci.yml` is used as a Quality Gate. On every branch push and Pull Request, GitHub Actions spins up a clean Ubuntu runner, checks out the code, installs Node packages to verify the dependencies build correctly, runs a code vulnerability audit, and runs static analysis on our Dockerfile to ensure container optimization standards are met. This protects the production branch from corrupt or insecure updates.
+
+### Q12: Why did you not use AWS EKS and AWS RDS in this project?
+**Answer:** EKS charges a flat fee of $0.10 per hour ($73 per month) for cluster control-plane management, which is not covered under the AWS Free Tier. Similarly, AWS RDS instances run outside the standard single EC2 free tier limits. To optimize costs and run inside a **free-tier t2.micro instance**, we used K3s (lightweight Kubernetes) and a containerized MySQL database pod. These function conceptually identical to EKS and RDS (they deploy workloads and route database traffic using standard Kubernetes manifests), demonstrating a production-grade infrastructure architecture for $0.
