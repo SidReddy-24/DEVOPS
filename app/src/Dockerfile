@@ -1,31 +1,19 @@
-# --- Stage 1: Build & Test Environment ---
+# Stage 1: Build dependencies
 FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Copy dependency manifests
 COPY package*.json ./
 RUN npm install
 
-# Copy source code and build application
+# Copy source code and build
 COPY . .
-RUN npm run build
 
-# --- Stage 2: Production-Ready Minimal Runtime ---
-FROM node:20-alpine AS runner
+# Stage 2: Final runtime container
+FROM node:20-alpine
 WORKDIR /app
-
-# Set production environment flags
-ENV NODE_ENV=production
-
-# Install ONLY production dependencies to save memory
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
-# Copy built compilation from Stage 1
-COPY --from=builder /app/dist ./dist
-
-# CRITICAL SECURITY STEP FOR HEALTHCARE: Run as non-root user
-USER node
+COPY --from=builder /app ./
 
 EXPOSE 3000
-CMD ["node", "dist/main.js"]
+CMD ["npm", "start"]
