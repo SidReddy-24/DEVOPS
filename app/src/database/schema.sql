@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS ehr_platform;
-USE ehr_platform;
+CREATE DATABASE IF NOT EXISTS healthcare;
+USE healthcare;
 
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -19,7 +19,7 @@ VALUES
 CREATE TABLE IF NOT EXISTS audit_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     action VARCHAR(255),
-    user_email VARCHAR(100),
+    user_id VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS medical_records (
 );
 
 
-INSERT INTO audit_logs(action,user_email)
+INSERT INTO audit_logs(action,user_id)
 VALUES
 ('System Started','system'),
 ('Admin Created','admin@ehr.com');

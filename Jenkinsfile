@@ -45,6 +45,8 @@ pipeline {
         stage('5. Deploy to Kubernetes') {
             steps {
                 echo 'Applying Kubernetes Manifests to local K3s Cluster...'
+                // Inject the newly built image tag dynamically into the deployment manifest
+                sh "sed -i 's|image: sidreddy24/ehr-app:latest|image: sidreddy24/ehr-app:\${IMAGE_TAG}|g' kubernetes/deployment.yml"
                 // The --insecure-skip-tls-verify flag tells kubectl to ignore the certificate's IP mismatch restriction
                 sh "kubectl apply -f kubernetes/namespace.yml --insecure-skip-tls-verify"
                 sh "kubectl apply -f kubernetes/deployment.yml --insecure-skip-tls-verify"

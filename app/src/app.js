@@ -80,50 +80,6 @@ app.post("/login",(req,res)=>{
 
 });
 
-app.get("/add-user",(req,res)=>{
-    res.render("add-user");
-});
-
-app.post("/add-user",(req,res)=>{
-
-    const {name,email,password,role}=req.body;
-
-    const sql=
-    "INSERT INTO users(name,email,password,role) VALUES(?,?,?,?)";
-
-    db.query(sql,[name,email,password,role],(err)=>{
-
-        if(err){
-
-            console.log(err);
-
-        }else{
-
-            res.redirect("/users");
-
-        }
-
-    });
-
-});
-
-app.get("/users",(req,res)=>{
-
-    db.query("SELECT * FROM users",(err,result)=>{
-
-        if(err){
-
-            console.log(err);
-
-        }else{
-
-            res.render("users",{users:result});
-
-        }
-
-    });
-
-});
 
 app.get("/add-user", (req, res) => {
     res.render("add-user");
@@ -358,30 +314,14 @@ res.render(
 
 });
 
-app.get("/audit",(req,res)=>{
-
-    db.query(
-        "SELECT * FROM audit_logs",
-        (err,result)=>{
-
-            if(err){
-
-                console.log(err);
-
-            }
-
-            else{
-
-                res.render(
-                    "audit",
-                    {logs:result}
-                );
-
-            }
-
+app.get("/health", (req, res) => {
+    db.query("SELECT 1", (err) => {
+        if (err) {
+            console.error("Health check failed:", err.message);
+            return res.status(500).json({ status: "DOWN", database: "disconnected", error: err.message });
         }
-    );
-
+        res.status(200).json({ status: "UP", database: "connected" });
+    });
 });
 
 app.listen(PORT, () => {

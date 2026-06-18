@@ -15,10 +15,19 @@ spec:
     spec:
       containers:
       - name: ehr-container
-        image: ehr-app:latest # Jenkins will update this tag automatically later
-        imagePullPolicy: IfNotPresent  # <-- CHANGE OR ADD THIS LINE
+        image: sidreddy24/ehr-app:latest # Jenkins will update this tag automatically later
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
+        env:
+        - name: DB_HOST
+          value: "mysql"
+        - name: DB_USER
+          value: "root"
+        - name: DB_PASSWORD
+          value: "rootpassword"
+        - name: DB_NAME
+          value: "healthcare"
         
         # Free-tier optimization: Keep memory footprint small
         resources:
