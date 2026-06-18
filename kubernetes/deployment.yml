@@ -16,6 +16,7 @@ spec:
       containers:
       - name: ehr-container
         image: ehr-app:latest # Jenkins will update this tag automatically later
+        imagePullPolicy: IfNotPresent  # <-- CHANGE OR ADD THIS LINE
         ports:
         - containerPort: 3000
         
