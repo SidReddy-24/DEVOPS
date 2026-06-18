@@ -45,8 +45,8 @@ pipeline {
         stage('5. Deploy to Kubernetes') {
             steps {
                 echo 'Applying Kubernetes Manifests to K3s Cluster...'
-                // Import the freshly built image directly into K3s containerd (no registry push needed)
-                sh "docker save ${DOCKER_REGISTRY_USER}/${APP_NAME}:latest | sudo k3s ctr images import -"
+                // Save the built image and import it into K3s containerd on the host via privileged docker run
+                sh "docker save ${DOCKER_REGISTRY_USER}/${APP_NAME}:latest | docker run -i --privileged --net=host --pid=host alpine nsenter -t 1 -m -u -i -n -p -- k3s ctr -n k8s.io images import -"
                 // Ensure the deployment manifest always references :latest
                 sh "sed -i 's|image: sidreddy24/ehr-app:.*|image: sidreddy24/ehr-app:latest|g' kubernetes/deployment.yml"
                 // Apply manifests
