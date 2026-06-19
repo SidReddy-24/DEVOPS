@@ -304,4 +304,76 @@ These can be automated as daily cron jobs.
 1. **AWS S3 Standard Storage:** AWS Free Tier includes 5 GB of standard storage for S3. Since our database backup files are lightweight `.sql` snapshots, using S3 provides highly durable, offsite backup storage at absolutely zero cost. This protects our data even if the EC2 VM is terminated or the EBS volume is lost.
 2. **AWS IAM Security:** AWS IAM is free to use. We leverage IAM Roles and Instance Profiles to implement keyless authentication. Rather than storing static AWS Access Keys (which could be compromised if accidentally committed to GitHub), we attach the IAM Instance Profile to our EC2 instance. This allows the CLI in our scripts to retrieve temporary AWS credentials automatically, maintaining enterprise-level security within the Free Tier.
 
+---
+
+## 8. Live Demonstration Guide: What to Show the Examiner
+
+If the examiner asks you to demonstrate specific components of your DevOps project, use this cheat sheet to quickly find the files, run the commands, and speak the keywords.
+
+### 1. GitHub: Source Code Management & Audit Tracking
+*   **What to Say:** "We use GitHub for version control, branching, and automated QA checks on PRs. For database security compliance, we maintain an `audit_logs` database table tracking all high-privilege activities (user login, metadata changes)."
+*   **What to Open:**
+    *   Open your browser to: `https://github.com/SidReddy-24/DEVOPS`
+    *   Open [.github/workflows/ci.yml](file:///.github/workflows/ci.yml) (Code Quality checks on push).
+    *   Show database logging in [app/src/app.js](file:///Users/siddharthreddy/Desktop/devops/app/src/app.js) where audit entries are written on actions.
+*   **Command to Run:**
+    *   `git status` & `git log -n 5` (Shows a clean history of commits).
+
+### 2. Docker: Containerization of Patient Management Services
+*   **What to Say:** "We containerized the Node.js/Express application using a lightweight `node:20-alpine` base image. Using Alpine reduces our final container image size (~150MB) and minimizes the security vulnerability surface area compared to standard Ubuntu images."
+*   **What to Open:**
+    *   Open [app/src/Dockerfile](file:///Users/siddharthreddy/Desktop/devops/app/src/Dockerfile) (Show multi-stage setup).
+*   **Command to Run:**
+    *   `docker images | grep ehr-app` (Shows the built image size).
+    *   `docker ps` (Shows running container processes).
+
+### 3. Jenkins: Automated Build, Testing, and Deployment Workflows
+*   **What to Say:** "Our CI/CD pipeline is defined as code in a declarative `Jenkinsfile`. It automates the checkout, linting, building, scanning, and zero-downtime rolling deployment to K3s using a containerd image import workaround."
+*   **What to Open:**
+    *   Open [Jenkinsfile](file:///Users/siddharthreddy/Desktop/devops/Jenkinsfile) in your editor.
+    *   Open the Jenkins Dashboard in your browser at `http://15.206.210.225:8080`.
+*   **Command to Run:**
+    *   Show build stages in the Jenkins UI.
+
+### 4. Kubernetes: Secure Deployment of Healthcare Applications
+*   **What to Say:** "We run K3s inside a dedicated namespace `healthcare` to isolate the resources. The app is highly available (2 replicas) with resource limits to prevent out-of-memory crashes, and it uses Liveness and Readiness probes to guarantee that traffic only hits operational pods."
+*   **What to Open:**
+    *   Open [kubernetes/deployment.yml](file:///Users/siddharthreddy/Desktop/devops/kubernetes/deployment.yml) (Point out `limits`, `livenessProbe`, `readinessProbe`).
+    *   Open [kubernetes/namespace.yml](file:///Users/siddharthreddy/Desktop/devops/kubernetes/namespace.yml) and [kubernetes/service.yml](file:///Users/siddharthreddy/Desktop/devops/kubernetes/service.yml).
+*   **Command to Run:**
+    *   `kubectl get all -n healthcare` (Shows namespaces, running pods, replicasets, and services).
+    *   `kubectl describe deployment/ehr-app-deployment -n healthcare` (Shows active rollout configurations and probe statuses).
+
+### 5. Terraform: Infrastructure Provisioning & Compliance Automation
+*   **What to Say:** "Our infrastructure is fully defined as code using Terraform. It provisions our EC2 virtual instance, a secure S3 bucket for database backups, and sets up security group firewalls allowing ingress only on specific ports (22, 8080, 8200, 30000) to automate network compliance."
+*   **What to Open:**
+    *   Open [terraform/main.tf](file:///Users/siddharthreddy/Desktop/devops/terraform/main.tf) (Point out the `aws_instance` and security groups).
+*   **Command to Run:**
+    *   `terraform show` (Shows the current state of provisioned AWS resources).
+
+### 6. AWS: EKS, RDS, S3, IAM, and CloudWatch
+*   **What to Say:** "To satisfy AWS Free-Tier limitations, we made strategic trade-offs: We substituted expensive managed services like EKS and RDS with K3s and containerized MySQL on EC2, and replaced CloudWatch with Prometheus/ELK. However, we used AWS S3 for secure backups and AWS IAM Roles/Instance Profiles for secure, keyless authentication."
+*   **What to Open:**
+    *   Open [terraform/main.tf](file:///Users/siddharthreddy/Desktop/devops/terraform/main.tf) (Point out `aws_s3_bucket`, `aws_iam_role`, `aws_iam_instance_profile`).
+    *   Open [scripts/backup.sh](file:///Users/siddharthreddy/Desktop/devops/scripts/backup.sh) (Show S3 integration).
+*   **Command to Run:**
+    *   `aws s3 ls s3://sidreddy24-ehr-db-backups` (Shows S3 bucket connectivity).
+
+### 7. Monitoring: Prometheus, Grafana, and ELK Stack
+*   **What to Say:** "We use Prometheus to collect metrics, Grafana to visualize container memory and request rates, and a Logstash pipeline configuration in the ELK stack to aggregate container stdout logs and filter out noise like redundant `/health` probes."
+*   **What to Open:**
+    *   Open [monitoring/prometheus-config.yml](file:///Users/siddharthreddy/Desktop/devops/monitoring/prometheus-config.yml).
+    *   Open [monitoring/elk-logstash-config.conf](file:///Users/siddharthreddy/Desktop/devops/monitoring/elk-logstash-config.conf) (Explain the `drop { }` block for `/health` requests).
+*   **Command to Run:**
+    *   Point out Grafana UI dashboard or show active metrics-scraping configurations.
+
+### 8. Security: Vault-Based Management of Patient Data Secrets
+*   **What to Say:** "We secure database credentials and patient data keys outside the source code. We use Kubernetes Secrets (`secret.yml`) injected dynamically into the runtime environment via `secretKeyRef` and run HashiCorp Vault on port 8200 to serve application secrets securely."
+*   **What to Open:**
+    *   Open [kubernetes/secret.yml](file:///Users/siddharthreddy/Desktop/devops/kubernetes/secret.yml) (Show base64 parameters).
+    *   Open [kubernetes/deployment.yml](file:///Users/siddharthreddy/Desktop/devops/kubernetes/deployment.yml) (Show `valueFrom.secretKeyRef` injection).
+*   **Command to Run:**
+    *   `kubectl get secrets -n healthcare` (Shows active cluster secrets).
+
+
 
