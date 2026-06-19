@@ -321,6 +321,14 @@ These can be automated as daily cron jobs.
    - **Kubernetes Bridge:** For Kubernetes pods, we sync the Vault keys into **Kubernetes Secrets** (`secret.yml`), which are base64-encoded and mounted as environment variables (`secretKeyRef`) inside the pod namespace.
 4. **Why Vault?** It offers key rotation, access audit logs, and dynamic secret generation, which are critical security requirements for healthcare data compliance (such as HIPAA).
 
+### Q21: How would you migrate your containerized database to AWS RDS in a production environment?
+**Answer:** To scale for production and transition to AWS RDS (Relational Database Service):
+1. **Provision RDS via Terraform:** Add an `aws_db_instance` resource in `terraform/main.tf` specifying the database engine (MySQL), instance class (e.g., `db.t3.micro`), and storage size.
+2. **Configure VPC Network Security:** Place the RDS instance in private subnets across multiple Availability Zones (Multi-AZ setup) and update the RDS Security Group to only allow ingress traffic on port `3306` from the EC2 instance security group.
+3. **Migrate Database Schema & Data:** Run `mysqldump` to export the current data from the local K3s MySQL pod, and import the `.sql` schema directly into the new RDS DNS endpoint.
+4. **Update Credentials & Configs:** Update our Kubernetes Secrets (`secret.yml`) or Vault config keys to reference the new RDS endpoint connection string instead of the local cluster service name (`mysql`).
+5. **Decommission Local Pod:** Delete the containerized MySQL pod configuration in K3s to free up EC2 system resources.
+
 ---
 
 ## 8. Live Demonstration Guide: What to Show the Examiner
