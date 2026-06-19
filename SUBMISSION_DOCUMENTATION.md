@@ -297,13 +297,13 @@ The monitoring dashboards (Prometheus, Grafana, Kibana) run as Docker containers
 
 #### Step 1: SSH into the EC2 instance
 ```bash
-ssh -i terraform/healthcare-key.pem ubuntu@15.206.210.225
+ssh -i terraform/healthcare-key.pem ubuntu@3.7.253.148
 ```
 
 #### Step 2: Run the one-shot monitoring setup script
 ```bash
 # Upload the script (from your local machine)
-scp -i terraform/healthcare-key.pem scripts/setup-monitoring.sh ubuntu@15.206.210.225:~/
+scp -i terraform/healthcare-key.pem scripts/setup-monitoring.sh ubuntu@3.7.253.148:~/
 
 # On the EC2 instance, execute it
 chmod +x setup-monitoring.sh
@@ -321,11 +321,11 @@ This script automatically:
 
 | Dashboard   | URL                                    | Purpose                        |
 |-------------|----------------------------------------|--------------------------------|
-| Grafana     | http://15.206.210.225:3000             | Metrics & visual panels        |
-| Prometheus  | http://15.206.210.225:9090             | Raw metrics scraping engine    |
-| Kibana      | http://15.206.210.225:5601             | Log aggregation & search       |
+| Grafana     | http://3.7.253.148:3000             | Metrics & visual panels        |
+| Prometheus  | http://3.7.253.148:9090             | Raw metrics scraping engine    |
+| Kibana      | http://3.7.253.148:5601             | Log aggregation & search       |
 
-> **Note:** If you restart the EC2 instance and get a new public IP, simply substitute `15.206.210.225` with your new EC2 IP. All Docker containers are set with `--restart always` so they start automatically on server reboot.
+> **Note:** If you restart the EC2 instance and get a new public IP, simply substitute `3.7.253.148` with your new EC2 IP. All Docker containers are set with `--restart always` so they start automatically on server reboot.
 
 
 
