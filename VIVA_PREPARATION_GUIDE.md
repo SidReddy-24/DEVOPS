@@ -329,6 +329,24 @@ These can be automated as daily cron jobs.
 4. **Update Credentials & Configs:** Update our Kubernetes Secrets (`secret.yml`) or Vault config keys to reference the new RDS endpoint connection string instead of the local cluster service name (`mysql`).
 5. **Decommission Local Pod:** Delete the containerized MySQL pod configuration in K3s to free up EC2 system resources.
 
+### Q22: Explain your Jenkins automated pipeline and how the workflow coordinates different files in your repository during a build.
+**Answer:** Our CI/CD workflow is defined declaratively in the [Jenkinsfile](file:///Users/siddharthreddy/Desktop/devops/Jenkinsfile). When a developer pushes code to GitHub, Jenkins executes 5 stages:
+1. **Checkout:** Jenkins pulls the latest code branch from the GitHub repository.
+2. **Docker Linting:** Performs configuration linting on the [app/src/Dockerfile](file:///Users/siddharthreddy/Desktop/devops/app/src/Dockerfile) (using tools like `hadolint`) to check for standard design rules and security best practices.
+3. **Build Image:** Triggers Docker daemon to build our Express/Node.js EHR web app image:
+   `docker build -t sidreddy24/ehr-app:latest ./app/src`
+4. **Security Scan:** Scans the newly compiled Docker image for vulnerable operating system packages or library packages (using tools like `Trivy`).
+5. **Deploy Workload:**
+   - **Step 1 (Image Sync):** K3s uses containerd. Since Jenkins runs in Docker, the image is invisible to K3s. We bridge this runtime gap by running an `nsenter` import command:
+     `docker save sidreddy24/ehr-app:latest | docker run -i --privileged --net=host --pid=host alpine nsenter -t 1 -m -u -i -n -p -- k3s ctr -n k8s.io images import -`
+   - **Step 2 (Apply Manifests):** Applies Kubernetes configurations: namespace, database secrets, service, and deployments:
+     `kubectl apply -f kubernetes/namespace.yml`
+     `kubectl apply -f kubernetes/secret.yml`
+     `kubectl apply -f kubernetes/deployment.yml`
+     `kubectl apply -f kubernetes/service.yml`
+   - **Step 3 (Rolling Deploy):** Performs zero-downtime container replacements:
+     `kubectl rollout restart deployment/ehr-app-deployment -n healthcare`
+
 ---
 
 ## 8. Live Demonstration Guide: What to Show the Examiner
