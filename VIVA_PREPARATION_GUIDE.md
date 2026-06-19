@@ -293,3 +293,9 @@ These can be automated as daily cron jobs.
 
 ### Q16: How does S3 integrate with your Disaster Recovery (DR) strategy?
 **Answer:** Our database backups are automated using `backup.sh`. When a backup is created via `mysqldump`, the script executes `aws s3 cp` to copy the file to our dedicated S3 bucket (`sidreddy24-ehr-db-backups`). In the event of a total EC2 server failure or K3s cluster crash, a new server can be provisioned using Terraform. The `restore.sh` script detects the absence of local files, runs `aws s3 sync` to retrieve the latest backups from the S3 bucket, and restores the database state, achieving a low Recovery Time Objective (RTO) and Recovery Point Objective (RPO) on a budget.
+
+### Q17: Why did you not use AWS CloudWatch for metrics and logging? How did you replace it?
+**Answer:** AWS CloudWatch charges for custom metrics ingestion, custom dashboards, alarms, and log storage/analytical queries, which quickly exceeds Free-Tier limits. To achieve zero-cost infrastructure observability, we replaced CloudWatch with open-source equivalents:
+1. **Metrics & Alerting (replaced CloudWatch Metrics):** We deployed **Prometheus** to scrape system/application performance statistics and **Grafana** to visualize them in live dashboards.
+2. **Log Aggregation (replaced CloudWatch Logs):** We implemented a local **ELK Stack (Elasticsearch, Logstash, Kibana)** pipeline where Logstash processes container logs on the host, filters out high-frequency health probes, and pushes them to Elasticsearch for dashboard visualization.
+
