@@ -26,3 +26,12 @@ else
 fi
 
 echo "✅ Backup successfully saved to: $BACKUP_FILE"
+
+# Upload to AWS S3 (for Disaster Recovery compliance)
+S3_BUCKET="s3://sidreddy24-ehr-db-backups"
+echo "☁️ Uploading backup to AWS S3: $S3_BUCKET..."
+if command -v aws &> /dev/null; then
+    aws s3 cp "$BACKUP_FILE" "$S3_BUCKET/$(basename "$BACKUP_FILE")" && echo "✅ Uploaded to S3 successfully." || echo "⚠️ S3 upload failed (check AWS CLI config/permissions)."
+else
+    echo "⚠️ AWS CLI not installed on this node. Simulated upload to S3: $S3_BUCKET/$(basename "$BACKUP_FILE")"
+fi

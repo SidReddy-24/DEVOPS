@@ -1,2 +1,9 @@
-terraform/
 node_modules/
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.pem
+backups/
+.DS_Store
+**/ .DS_Store

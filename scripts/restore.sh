@@ -13,7 +13,15 @@ fi
 LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/ehr_backup_*.sql 2>/dev/null | head -n 1 || echo "")
 
 if [ -z "$LATEST_BACKUP" ]; then
-    echo "❌ Error: No SQL backup files found in $BACKUP_DIR!"
+    echo "⚠️ Local backup file not found. Checking AWS S3 bucket: s3://sidreddy24-ehr-db-backups..."
+    if command -v aws &> /dev/null; then
+        aws s3 sync s3://sidreddy24-ehr-db-backups/ "$BACKUP_DIR/"
+        LATEST_BACKUP=$(ls -t "$BACKUP_DIR"/ehr_backup_*.sql 2>/dev/null | head -n 1 || echo "")
+    fi
+fi
+
+if [ -z "$LATEST_BACKUP" ]; then
+    echo "❌ Error: No SQL backup files found locally or in S3!"
     exit 1
 fi
 
