@@ -359,6 +359,97 @@ These can be automated as daily cron jobs.
 3. **Execution and Orchestration:**
    - K3s fetches this image from its local containerd store and executes it inside Kubernetes pods. The pods are defined in [kubernetes/deployment.yml](file:///Users/siddharthreddy/Desktop/devops/kubernetes/deployment.yml), specifying container port `3000` and binding database configurations.
 
+### Q24: What is the exact code and structure of your Jenkinsfile? How does each stage work?
+**Answer:** Our Jenkins pipeline is configured as code using a declarative syntax in [Jenkinsfile](file:///Users/siddharthreddy/Desktop/devops/Jenkinsfile). Below is the pipeline structure and code:
+```groovy
+pipeline {
+    agent any
+    environment {
+        DOCKER_REGISTRY_USER = "sidreddy24"
+        APP_NAME             = "ehr-app"
+        IMAGE_TAG            = "${BUILD_NUMBER}"
+    }
+    stages {
+        stage('1. Code Checkout') {
+            steps { checkout scm }
+        }
+        stage('2. Security Linting') {
+            steps { sh 'echo "Checking Dockerfile compliance..."' }
+        }
+        stage('3. Build Optimized Image') {
+            steps {
+                dir('app/src') {
+                    sh "docker build -t ${DOCKER_REGISTRY_USER}/${APP_NAME}:${IMAGE_TAG} ."
+                    sh "docker tag ${DOCKER_REGISTRY_USER}/${APP_NAME}:${IMAGE_TAG} ${DOCKER_REGISTRY_USER}/${APP_NAME}:latest"
+                }
+            }
+        }
+        stage('4. Local Image Scan') {
+            steps { sh 'echo "No vulnerabilities found. Image secure."' }
+        }
+        stage('5. Deploy to Kubernetes') {
+            steps {
+                // Import the built image into containerd runtime of K3s using namespace bridge command:
+                sh "docker save ${DOCKER_REGISTRY_USER}/${APP_NAME}:latest | docker run -i --privileged --net=host --pid=host alpine nsenter -t 1 -m -u -i -n -p -- k3s ctr -n k8s.io images import -"
+                // Apply Kubernetes namespace, secrets, deployment, and service configurations:
+                sh "kubectl apply -f kubernetes/namespace.yml --insecure-skip-tls-verify"
+                sh "kubectl apply -f kubernetes/secret.yml --insecure-skip-tls-verify"
+                sh "kubectl apply -f kubernetes/deployment.yml --insecure-skip-tls-verify"
+                sh "kubectl apply -f kubernetes/service.yml --insecure-skip-tls-verify"
+                // Execute rolling restart to apply the updated build with zero downtime:
+                sh "kubectl rollout restart deployment/ehr-app-deployment -n healthcare --insecure-skip-tls-verify"
+                sh "kubectl rollout status deployment/ehr-app-deployment -n healthcare --insecure-skip-tls-verify --timeout=90s"
+            }
+        }
+    }
+}
+```
+
+### Q25: What is the exact code and structure of your Terraform configuration? How does it bootstrap and provision the server?
+**Answer:** Our AWS infrastructure is provisioned declaratively in [terraform/main.tf](file:///Users/siddharthreddy/Desktop/devops/terraform/main.tf). It defines the virtual server, S3 bucket, IAM instance roles, and system bootstrapping code:
+```hcl
+resource "aws_instance" "devops_server" {
+  ami                  = "ami-007020fd9c84e18c7" # Ubuntu 22.04 LTS
+  instance_type        = var.instance_type
+  key_name             = var.key_name
+  vpc_security_group_ids = [aws_security_group.healthcare_sg.id]
+  iam_instance_profile = aws_iam_instance_profile.s3_backup_profile.name
+
+  root_block_device {
+    volume_size = 30 # AWS Free Tier storage limit
+    volume_type = "gp3"
+  }
+  
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update -y
+              apt-get install -y curl apt-transport-https ca-certificates gnupg lsb-release
+              # Install Docker
+              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+              apt-get update -y && apt-get install -y docker-ce docker-ce-cli containerd.io
+              # Install K3s (Lightweight Kubernetes)
+              curl -sfL https://get.k3s.io | sh -
+              # Start Jenkins container on port 8080
+              docker run -d -p 8080:8080 -p 50000:50000 --name jenkins --restart always -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
+              EOF
+}
+
+# AWS S3 Bucket for database backups
+resource "aws_s3_bucket" "backup_bucket" {
+  bucket        = "sidreddy24-ehr-db-backups"
+  force_destroy = true
+}
+
+# IAM Role, Policy, and Instance Profile for secure S3 bucket uploads
+resource "aws_iam_role" "s3_backup_role" { ... }
+resource "aws_iam_role_policy" "s3_backup_policy" { ... }
+resource "aws_iam_instance_profile" "s3_backup_profile" { ... }
+```
+When `terraform apply` is executed:
+1. Terraform connects to AWS and provisions the EC2 instance (Ubuntu 22.04 LTS), security groups, S3 bucket, and IAM roles.
+2. The `user_data` script triggers automatically upon EC2 boot to install Docker and K3s, and run Jenkins. This automates the environment provisioning from scratch.
+
 ---
 
 ## 8. Live Demonstration Guide: What to Show the Examiner
