@@ -347,6 +347,18 @@ These can be automated as daily cron jobs.
    - **Step 3 (Rolling Deploy):** Performs zero-downtime container replacements:
      `kubectl rollout restart deployment/ehr-app-deployment -n healthcare`
 
+### Q23: Explain how Docker is used in this project. How are the Docker images built, configured, and managed?
+**Answer:** Docker containerizes our Express/Node.js EHR web application to isolate dependencies and guarantee that the code runs identically across staging and production.
+1. **The Configuration File:** We configure the image structure inside [app/src/Dockerfile](file:///Users/siddharthreddy/Desktop/devops/app/src/Dockerfile):
+   - **Base Image:** We use `FROM node:20-alpine`. The Alpine base distribution is ultra-lightweight (~5MB), bringing the total built image size down to only ~150MB. This saves local disk storage (crucial for Free Tier) and minimizes security vulnerabilities.
+   - **Optimization:** We copy `package*.json` and run `npm install` before copying the rest of the application files. This leverages Docker’s build cache layers, making subsequent builds fast.
+2. **Build and Tagging Pipeline:**
+   - Jenkins automates the build stage inside the [Jenkinsfile](file:///Users/siddharthreddy/Desktop/devops/Jenkinsfile) by running:
+     `docker build -t sidreddy24/ehr-app:latest ./app/src`
+   - We scan the built image for security packages, tag it, and then load it into our Kubernetes (K3s) container registry.
+3. **Execution and Orchestration:**
+   - K3s fetches this image from its local containerd store and executes it inside Kubernetes pods. The pods are defined in [kubernetes/deployment.yml](file:///Users/siddharthreddy/Desktop/devops/kubernetes/deployment.yml), specifying container port `3000` and binding database configurations.
+
 ---
 
 ## 8. Live Demonstration Guide: What to Show the Examiner
