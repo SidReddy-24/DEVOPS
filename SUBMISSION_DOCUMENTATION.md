@@ -327,5 +327,50 @@ This script automatically:
 
 > **Note:** If you restart the EC2 instance and get a new public IP, simply substitute `3.7.253.148` with your new EC2 IP. All Docker containers are set with `--restart always` so they start automatically on server reboot.
 
+#### Step 4: Deploy Node Exporter for Host Machine Metrics
+To gather EC2 host operating system metrics (CPU, memory, disk, network), we run Node Exporter directly on the host using Docker. It runs with host networking and PID namespaces to view host system statistics:
+```bash
+sudo docker run -d \
+  --name=node-exporter \
+  --net=host \
+  --pid=host \
+  --restart=always \
+  prom/node-exporter
+```
+
+#### Step 5: Configure Prometheus Scrape Target
+Since Prometheus runs inside a Docker container, it cannot reach the host's Node Exporter using `localhost:9100`. We configured it to use the EC2 instance's private IP address:
+1. Open the Prometheus configuration on the EC2 host:
+   ```yaml
+   # /opt/prometheus/prometheus.yml
+   global:
+     scrape_interval: 15s
+
+   scrape_configs:
+     - job_name: 'node-exporter'
+       static_configs:
+         # Replace with your EC2 private IP address
+         - targets: ['172.31.12.244:9100']
+   ```
+2. Verify that Node Exporter status shows as **UP** at `http://3.7.253.148:9090/targets`.
+
+#### Step 6: Configure Grafana Prometheus Datasource
+To connect Grafana to Prometheus, the datasource must reference the Prometheus container on the internal Docker network.
+1. We configure the Grafana Datasource URL to: `http://prometheus:9090` (using the container name instead of `localhost`).
+2. This can be configured automatically via the Grafana API:
+   ```bash
+   curl -X POST -H "Content-Type: application/json" \
+     -d '{"name":"prometheus","type":"prometheus","url":"http://prometheus:9090","access":"proxy","isDefault":true}' \
+     http://admin:admin@localhost:3000/api/datasources
+   ```
+
+#### Step 7: Import Node Exporter Full Dashboard (ID 1860)
+1. Navigate to **Grafana** at `http://3.7.253.148:3000` (Login: `admin / admin`).
+2. Go to **Dashboards** -> **Import**.
+3. Under **Import via grafana.com**, enter ID `1860` and click **Load**.
+4. Select the configured **prometheus** datasource in the dropdown menu.
+5. Click **Import** to view the live dashboard displaying CPU usage, RAM utilization, Disk IO, and Network throughput of the EC2 instance.
+
+
 
 

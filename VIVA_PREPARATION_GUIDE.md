@@ -541,12 +541,14 @@ If the examiner asks you to demonstrate specific components of your DevOps proje
     *   `aws s3 ls s3://sidreddy24-ehr-db-backups` (Shows S3 bucket connectivity).
 
 ### 7. Monitoring: Prometheus, Grafana, and ELK Stack
-*   **What to Say:** "We use Prometheus to collect metrics, Grafana to visualize container memory and request rates, and a Logstash pipeline configuration in the ELK stack to aggregate container stdout logs and filter out noise like redundant `/health` probes."
+*   **What to Say:** "We use Prometheus to scrape performance metrics and Grafana to visualize them, and an ELK Stack pipeline to collect application logs. Because Prometheus runs inside a Docker container, it cannot scrape host metrics using `localhost:9100`. Instead, we deploy Node Exporter with host networking and configure Prometheus to scrape the EC2 instance's private IP (`172.31.12.244:9100`). Grafana is configured to connect to Prometheus internally at `http://prometheus:9090` on the Docker network, and we imported the Node Exporter Full Dashboard (ID 1860) to visualize host metrics."
 *   **What to Open:**
-    *   Open [monitoring/prometheus-config.yml](file:///Users/siddharthreddy/Desktop/devops/monitoring/prometheus-config.yml).
-    *   Open [monitoring/elk-logstash-config.conf](file:///Users/siddharthreddy/Desktop/devops/monitoring/elk-logstash-config.conf) (Explain the `drop { }` block for `/health` requests).
+    *   Open [monitoring/prometheus-config.yml](file:///Users/siddharthreddy/Desktop/devops/monitoring/prometheus-config.yml) (Show the target using the private IP instead of localhost).
+    *   Open [monitoring/elk-logstash-config.conf](file:///Users/siddharthreddy/Desktop/devops/monitoring/elk-logstash-config.conf) (Explain the log filtering rules).
 *   **Command to Run:**
-    *   Point out Grafana UI dashboard or show active metrics-scraping configurations.
+    *   `sudo docker ps` (Show running Prometheus, Grafana, Node Exporter, and ELK containers).
+    *   `curl http://admin:admin@localhost:3000/api/datasources` (Show configured Prometheus datasource targeting `http://prometheus:9090`).
+
 
 ### 8. Security: Vault-Based Management of Patient Data Secrets
 *   **What to Say:** "We secure database credentials and patient data keys outside the source code. We use Kubernetes Secrets (`secret.yml`) injected dynamically into the runtime environment via `secretKeyRef` and run HashiCorp Vault on port 8200 to serve application secrets securely."
