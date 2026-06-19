@@ -304,6 +304,14 @@ These can be automated as daily cron jobs.
 1. **AWS S3 Standard Storage:** AWS Free Tier includes 5 GB of standard storage for S3. Since our database backup files are lightweight `.sql` snapshots, using S3 provides highly durable, offsite backup storage at absolutely zero cost. This protects our data even if the EC2 VM is terminated or the EBS volume is lost.
 2. **AWS IAM Security:** AWS IAM is free to use. We leverage IAM Roles and Instance Profiles to implement keyless authentication. Rather than storing static AWS Access Keys (which could be compromised if accidentally committed to GitHub), we attach the IAM Instance Profile to our EC2 instance. This allows the CLI in our scripts to retrieve temporary AWS credentials automatically, maintaining enterprise-level security within the Free Tier.
 
+### Q19: What are your "Test Disaster Recovery (DR)" procedures? How do you simulate and verify a database restore?
+**Answer:** We simulate and verify our DR process using a 5-step test sequence:
+1. **Data Insertion (Baseline):** Verify that the web app is running and insert sample patient diagnostics/logs.
+2. **Execute Backup:** Run `./scripts/backup.sh`. This dumps the MySQL database contents to a local `.sql` snapshot and automatically uploads it to the `sidreddy24-ehr-db-backups` S3 bucket.
+3. **Simulate Disaster (Data Loss):** Drop the schema tables inside the MySQL container/pod (e.g., executing `DROP DATABASE healthcare; CREATE DATABASE healthcare;`). Verify that the application now displays an empty state or database error.
+4. **Execute Restore:** Run `./scripts/restore.sh`. The script retrieves the latest backup from local storage (or downloads it directly from S3 if the local copy is missing) and imports it into the database container/pod.
+5. **Validation:** Refresh the web app and check the audit logs table to verify that all patient records and diagnostic data are fully restored and readable.
+
 ---
 
 ## 8. Live Demonstration Guide: What to Show the Examiner
