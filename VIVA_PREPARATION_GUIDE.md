@@ -450,6 +450,41 @@ When `terraform apply` is executed:
 1. Terraform connects to AWS and provisions the EC2 instance (Ubuntu 22.04 LTS), security groups, S3 bucket, and IAM roles.
 2. The `user_data` script triggers automatically upon EC2 boot to install Docker and K3s, and run Jenkins. This automates the environment provisioning from scratch.
 
+### Q26: Explain the configuration and role of Prometheus, Grafana, and ELK Stack in this project.
+**Answer:** We separate monitoring into two categories: **metrics collection (Prometheus & Grafana)** and **log analysis (ELK Stack)**.
+1. **Metrics Monitoring (Prometheus & Grafana):**
+   - **Prometheus** scrapes real-time numeric performance metrics from our application. It targets the cluster database DNS service on port `80` at path `/metrics` defined in [monitoring/prometheus-config.yml](file:///Users/siddharthreddy/Desktop/devops/monitoring/prometheus-config.yml):
+     ```yaml
+     scrape_configs:
+       - job_name: 'ehr-app'
+         metrics_path: '/metrics'
+         static_configs:
+           - targets: ['ehr-app-service.healthcare.svc.cluster.local:80']
+     ```
+   - **Grafana** connects to Prometheus as a datasource and queries metrics (such as `nodejs_external_memory_bytes` or request rate `rate(http_requests_total[5m])`) to display them on dashboard panels defined in [monitoring/grafana-dashboard.json](file:///Users/siddharthreddy/Desktop/devops/monitoring/grafana-dashboard.json).
+2. **Centralized Log Aggregation (ELK Stack):**
+   - We run a containerized ELK Stack where **Logstash** monitors raw Kubernetes container logs on the host. Its pipeline configuration is defined in [monitoring/elk-logstash-config.conf](file:///Users/siddharthreddy/Desktop/devops/monitoring/elk-logstash-config.conf):
+     ```logstash
+     input {
+       file {
+         path => "/var/log/containers/ehr-app-*.log"
+         codec => json
+       }
+     }
+     filter {
+       if [message] =~ "GET /health" {
+         drop { }  # Drop frequent health check log messages to prevent storage bloat
+       }
+     }
+     output {
+       elasticsearch {
+         hosts => ["elasticsearch.monitoring.svc.cluster.local:9200"]
+         index => "ehr-healthcare-logs-%{+YYYY.MM.dd}"
+       }
+     }
+     ```
+   - **Elasticsearch** indexes these logs by day, and **Kibana** provides a dashboard UI to let operators search patient registration events, error traces, and administrative audit history.
+
 ---
 
 ## 8. Live Demonstration Guide: What to Show the Examiner
