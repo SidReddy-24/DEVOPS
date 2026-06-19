@@ -291,26 +291,41 @@ aws s3 ls s3://sidreddy24-ehr-db-backups
 ./scripts/restore.sh
 ```
 
-### D. Accessing the Monitoring & Observability Dashboards
-To protect our healthcare cluster from public security vulnerabilities, only ports `22`, `8080` (Jenkins), `8200` (Vault), and `30000` (EHR App) are exposed directly to the internet in our Security Group. 
+### D. Monitoring Stack — Setup & Direct Browser Access
 
-To view Prometheus, Grafana, or Kibana dashboards securely, establish an SSH tunnel or port-forwarding to route traffic to your local web browser:
+The monitoring dashboards (Prometheus, Grafana, Kibana) run as Docker containers directly on the EC2 instance and are now accessible directly from your browser using the public EC2 IP. Ports `3000`, `9090`, and `5601` are opened in the Terraform Security Group (`terraform/security_groups.tf`).
 
+#### Step 1: SSH into the EC2 instance
 ```bash
-# 1. Access Grafana Dashboard (Port 3000)
-# Run the local port-forwarding link in your local terminal:
-kubectl port-forward svc/grafana-service 3000:3000 -n monitoring
-
-# Or establish an SSH tunnel:
-ssh -i healthcare-key.pem -L 3000:localhost:3000 ubuntu@15.206.210.225
-# Open your local browser to: http://localhost:3000
-
-# 2. Access Prometheus Dashboard (Port 9090)
-kubectl port-forward svc/prometheus-service 9090:9090 -n monitoring
-# Open your local browser to: http://localhost:9090
-
-# 3. Access Kibana Dashboard (Port 5601)
-kubectl port-forward svc/kibana-service 5601:5601 -n monitoring
-# Open your local browser to: http://localhost:5601
+ssh -i terraform/healthcare-key.pem ubuntu@15.206.210.225
 ```
+
+#### Step 2: Run the one-shot monitoring setup script
+```bash
+# Upload the script (from your local machine)
+scp -i terraform/healthcare-key.pem scripts/setup-monitoring.sh ubuntu@15.206.210.225:~/
+
+# On the EC2 instance, execute it
+chmod +x setup-monitoring.sh
+./setup-monitoring.sh
+```
+
+This script automatically:
+- Starts **Prometheus** container (port 9090)
+- Starts **Grafana** container (port 3000) with login `admin / admin`
+- Starts **Elasticsearch** container (port 9200)
+- Starts **Kibana** container (port 5601)
+- Starts **Logstash** container (reads container logs, filters `/health` probes, ships to Elasticsearch)
+
+#### Step 3: Open dashboards directly in your browser
+
+| Dashboard   | URL                                    | Purpose                        |
+|-------------|----------------------------------------|--------------------------------|
+| Grafana     | http://15.206.210.225:3000             | Metrics & visual panels        |
+| Prometheus  | http://15.206.210.225:9090             | Raw metrics scraping engine    |
+| Kibana      | http://15.206.210.225:5601             | Log aggregation & search       |
+
+> **Note:** If you restart the EC2 instance and get a new public IP, simply substitute `15.206.210.225` with your new EC2 IP. All Docker containers are set with `--restart always` so they start automatically on server reboot.
+
+
 

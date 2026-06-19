@@ -109,7 +109,7 @@ In production, hosting a platform on enterprise-grade AWS services incurs signif
 *   **P - Probes & Health Checks:** Uses `livenessProbe` to detect if the container is dead and needs a restart, and `readinessProbe` to ensure traffic is only routed when the database connection is ready.
 *   **Q - Quality Gate & Security Scanning:** Incorporates static analysis stages to check the security posture of the Docker containers.
 *   **R - Rollout & Zero-Downtime Deployments:** Deploys updates using rolling updates where K3s terminates old pods only after new pods pass readiness probes.
-*   **S - Security Groups:** AWS Security Group (`healthcare-platform-sg`) acts as a virtual firewall allowing ports `22` (SSH), `8080` (Jenkins), `8200` (Vault), and `30000` (EHR App).
+*   **S - Security Groups:** AWS Security Group (`healthcare-platform-sg`) acts as a virtual firewall allowing ports `22` (SSH), `8080` (Jenkins), `8200` (Vault), `30000` (EHR App), `3000` (Grafana), `9090` (Prometheus), and `5601` (Kibana/ELK).
 *   **T - Terraform State Management:** Tracks infrastructure state in `terraform.tfstate` ensuring only incremental changes are applied.
 *   **U - User Data & Bootstrapping:** Bash script automated under `user_data` to automatically install Docker, K3s, and run Jenkins on initial VM start.
 *   **V - Vault & Secrets Integration:** Implemented using Kubernetes Secrets (`secret.yml`), decoupled from source code, mapping directly to environment parameters via `secretKeyRef`.
@@ -131,7 +131,7 @@ This file provisions the AWS EC2 instance, configures the root storage size to 3
     docker run -d -p 8080:8080 -p 50000:50000 --name jenkins --restart always -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
     ```
 *   **Variables (`variables.tf`):** Defines region (`ap-south-1`), instance type (`t2.micro`), and SSH key name.
-*   **Security Groups (`security_groups.tf`):** Controls incoming traffic. Open ports are 22 (SSH), 8080 (Jenkins), 8200 (Vault), and 30000 (EHR web access).
+*   **Security Groups (`security_groups.tf`):** Controls incoming traffic. Open ports are 22 (SSH), 8080 (Jenkins), 8200 (Vault), 30000 (EHR web access), 3000 (Grafana), 9090 (Prometheus), and 5601 (Kibana/ELK).
 
 ### B. Containerization: Dockerfile (`app/src/Dockerfile`)
 Uses a multi-step design philosophy starting from `node:20-alpine`:

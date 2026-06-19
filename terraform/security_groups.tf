@@ -34,6 +34,30 @@ resource "aws_security_group" "healthcare_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # Port 3000: For accessing Grafana Metrics Dashboard
+  ingress {
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Port 9090: For accessing Prometheus UI
+  ingress {
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # Port 5601: For accessing Kibana Logs Dashboard (ELK)
+  ingress {
+    from_port   = 5601
+    to_port     = 5601
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   # Outbound access: Lets your server talk to the internet to download updates
   egress {
     from_port   = 0
