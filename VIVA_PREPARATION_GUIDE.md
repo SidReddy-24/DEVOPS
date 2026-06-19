@@ -299,3 +299,9 @@ These can be automated as daily cron jobs.
 1. **Metrics & Alerting (replaced CloudWatch Metrics):** We deployed **Prometheus** to scrape system/application performance statistics and **Grafana** to visualize them in live dashboards.
 2. **Log Aggregation (replaced CloudWatch Logs):** We implemented a local **ELK Stack (Elasticsearch, Logstash, Kibana)** pipeline where Logstash processes container logs on the host, filters out high-frequency health probes, and pushes them to Elasticsearch for dashboard visualization.
 
+### Q18: Why did you choose to use AWS S3 and IAM in your project, and how do they fit into the AWS Free Tier limitations?
+**Answer:** 
+1. **AWS S3 Standard Storage:** AWS Free Tier includes 5 GB of standard storage for S3. Since our database backup files are lightweight `.sql` snapshots, using S3 provides highly durable, offsite backup storage at absolutely zero cost. This protects our data even if the EC2 VM is terminated or the EBS volume is lost.
+2. **AWS IAM Security:** AWS IAM is free to use. We leverage IAM Roles and Instance Profiles to implement keyless authentication. Rather than storing static AWS Access Keys (which could be compromised if accidentally committed to GitHub), we attach the IAM Instance Profile to our EC2 instance. This allows the CLI in our scripts to retrieve temporary AWS credentials automatically, maintaining enterprise-level security within the Free Tier.
+
+
