@@ -312,6 +312,15 @@ These can be automated as daily cron jobs.
 4. **Execute Restore:** Run `./scripts/restore.sh`. The script retrieves the latest backup from local storage (or downloads it directly from S3 if the local copy is missing) and imports it into the database container/pod.
 5. **Validation:** Refresh the web app and check the audit logs table to verify that all patient records and diagnostic data are fully restored and readable.
 
+### Q20: Explain "Vault-based management of patient data secrets." How is HashiCorp Vault integrated for security?
+**Answer:** HashiCorp Vault is a secure secrets-management engine used to protect sensitive data like database passwords, API keys, and encryption keys.
+1. **The Vulnerability Problem:** Hardcoding database credentials in deployment files or config files results in plaintext secrets being stored in version control (GitHub), which exposes patient data to leaks.
+2. **The Vault Solution:** Vault runs as a secure service (on port 8200) inside our environment. Secrets are stored encrypted-at-rest in Vault's Key-Value (KV) store.
+3. **Integration Flow:** 
+   - **Production Integration:** The Node.js application fetches database credentials and encryption keys dynamically from Vault's REST API at runtime using a secure client token.
+   - **Kubernetes Bridge:** For Kubernetes pods, we sync the Vault keys into **Kubernetes Secrets** (`secret.yml`), which are base64-encoded and mounted as environment variables (`secretKeyRef`) inside the pod namespace.
+4. **Why Vault?** It offers key rotation, access audit logs, and dynamic secret generation, which are critical security requirements for healthcare data compliance (such as HIPAA).
+
 ---
 
 ## 8. Live Demonstration Guide: What to Show the Examiner
