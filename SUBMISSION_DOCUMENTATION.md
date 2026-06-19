@@ -290,3 +290,27 @@ aws s3 ls s3://sidreddy24-ehr-db-backups
 # Trigger database recovery (downloads latest file from S3 if missing locally)
 ./scripts/restore.sh
 ```
+
+### D. Accessing the Monitoring & Observability Dashboards
+To protect our healthcare cluster from public security vulnerabilities, only ports `22`, `8080` (Jenkins), `8200` (Vault), and `30000` (EHR App) are exposed directly to the internet in our Security Group. 
+
+To view Prometheus, Grafana, or Kibana dashboards securely, establish an SSH tunnel or port-forwarding to route traffic to your local web browser:
+
+```bash
+# 1. Access Grafana Dashboard (Port 3000)
+# Run the local port-forwarding link in your local terminal:
+kubectl port-forward svc/grafana-service 3000:3000 -n monitoring
+
+# Or establish an SSH tunnel:
+ssh -i healthcare-key.pem -L 3000:localhost:3000 ubuntu@15.206.210.225
+# Open your local browser to: http://localhost:3000
+
+# 2. Access Prometheus Dashboard (Port 9090)
+kubectl port-forward svc/prometheus-service 9090:9090 -n monitoring
+# Open your local browser to: http://localhost:9090
+
+# 3. Access Kibana Dashboard (Port 5601)
+kubectl port-forward svc/kibana-service 5601:5601 -n monitoring
+# Open your local browser to: http://localhost:5601
+```
+
